@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mumbai House Price Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border: 4px solid #e5e5e5;
+            border-top: 4px solid #000000;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Custom font for Nothing-inspired aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-white min-h-screen">
+    <div class="container mx-auto px-4 py-12 max-w-3xl">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-3xl font-light tracking-tight text-black">Mumbai House Price Predictor</h1>
+            <p class="text-gray-500 text-sm mt-2">Estimate property prices with precision</p>
+            {% if not model_loaded %}
+            <div class="mt-6 bg-gray-100 border border-gray-300 text-gray-700 px-4 py-2 rounded-sm text-sm">
+                ⚠️ Model not loaded. Please check server logs.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="bg-white border border-gray-200 rounded-sm p-8 mb-8">
+            <form id="predictionForm" class="space-y-8">
+                <!-- Property Details Section -->
+                <div>
+                    <h2 class="text-lg font-light text-black mb-4">Property Details</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Area -->
+                        <div>
+                            <label for="area" class="block text-xs font-medium text-gray-600 mb-2">
+                                Area (sqft) *
+                            </label>
+                            <input type="number" id="area" name="area" required min="100" max="50000" step="0.1"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                placeholder="e.g., 1000">
+                        </div>
+
+                        <!-- Total Rooms -->
+                        <div>
+                            <label for="total_rooms" class="block text-xs font-medium text-gray-600 mb-2">
+                                Total Rooms *
+                            </label>
+                            <input type="number" id="total_rooms" name="total_rooms" required min="1" max="20"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                placeholder="e.g., 3">
+                        </div>
+
+                        <!-- Bedrooms -->
+                        <div>
+                            <label for="Bedrooms" class="block text-xs font-medium text-gray-600 mb-2">
+                                Bedrooms *
+                            </label>
+                            <input type="number" id="Bedrooms" name="Bedrooms" required min="0" max="15"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                placeholder="e.g., 2">
+                        </div>
+
+                        <!-- Bathrooms -->
+                        <div>
+                            <label for="Bathrooms" class="block text-xs font-medium text-gray-600 mb-2">
+                                Bathrooms *
+                            </label>
+                            <input type="number" id="Bathrooms" name="Bathrooms" required min="0" max="10"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                placeholder="e.g., 2">
+                        </div>
+
+                        <!-- Balcony -->
+                        <div>
+                            <label for="Balcony" class="block text-xs font-medium text-gray-600 mb-2">
+                                Balconies
+                            </label>
+                            <input type="number" id="Balcony" name="Balcony" value="0" min="0" max="10"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                        </div>
+
+                        <!-- Parking -->
+                        <div>
+                            <label for="parking" class="block text-xs font-medium text-gray-600 mb-2">
+                                Parking Slots
+                            </label>
+                            <input type="number" id="parking" name="parking" value="0" min="0" max="10"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Property Features Section -->
+                <div>
+                    <h2 class="text-lg font-light text-black mb-4">Property Features</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Lift -->
+                        <div>
+                            <label for="Lift" class="block text-xs font-medium text-gray-600 mb-2">
+                                Lift Available *
+                            </label>
+                            <select id="Lift" name="Lift" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+
+                        <!-- Furnished Status -->
+                        <div>
+                            <label for="furnished_status" class="block text-xs font-medium text-gray-600 mb-2">
+                                Furnished Status *
+                            </label>
+                            <select id="furnished_status" name="furnished_status" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                                <option value="Unfurnished">Unfurnished</option>
+                                <option value="Semi-Furnished">Semi-Furnished</option>
+                                <option value="Furnished">Furnished</option>
+                            </select>
+                        </div>
+
+                        <!-- Building Type -->
+                        <div>
+                            <label for="building_type" class="block text-xs font-medium text-gray-600 mb-2">
+                                Building Type *
+                            </label>
+                            <select id="building_type" name="building_type" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                                <option value="Apartment">Apartment</option>
+                                <option value="Individual House">Individual House</option>
+                                <option value="Villa">Villa</option>
+                                <option value="Studio">Studio</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- New or Resale -->
+                        <div>
+                            <label for="new_or_resale" class="block text-xs font-medium text-gray-600 mb-2">
+                                Property Condition *
+                            </label>
+                            <select id="new_or_resale" name="new_or_resale" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                                <option value="New">New</option>
+                                <option value="Resale">Resale</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Section -->
+                <div>
+                    <h2 class="text-lg font-light text-black mb-4">Location</h2>
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Locality -->
+                        <div>
+                            <label for="locality" class="block text-xs font-medium text-gray-600 mb-2">
+                                Locality *
+                            </label>
+                            <select id="locality" name="locality" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm">
+                                <option value="">-- Select Locality --</option>
+                                {% for loc in localities %}
+                                <option value="{{ loc }}">{{ loc }}</option>
+                                {% endfor %}
+                                <option value="__OTHER__">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Other Locality Input (hidden by default) -->
+                        <div id="otherLocalityDiv" class="hidden">
+                            <label for="otherLocality" class="block text-xs font-medium text-gray-600 mb-2">
+                                Enter Locality Name
+                            </label>
+                            <input type="text" id="otherLocality"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                placeholder="Enter locality name">
+                        </div>
+
+                        <!-- Optional Coordinates -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="latitude" class="block text-xs font-medium text-gray-600 mb-2">
+                                    Latitude (Optional)
+                                </label>
+                                <input type="number" id="latitude" name="latitude" step="0.0000000000001" min="-90" max="90"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                    placeholder="e.g., 19.0760">
+                            </div>
+                            <div>
+                                <label for="longitude" class="block text-xs font-medium text-gray-600 mb-2">
+                                    Longitude (Optional)
+                                </label>
+                                <input type="number" id="longitude" name="longitude" step="0.0000000000001" min="-180"
+                                    max="180"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:border-black text-sm"
+                                    placeholder="e.g., 72.8777">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-center">
+                    <button type="submit" {% if not model_loaded %}disabled{% endif %}
+                        class="bg-black hover:bg-gray-800 text-white font-medium py-2 px-6 rounded-sm transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm">
+                        Predict Price
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingDiv" class="hidden text-center">
+            <div class="loader mx-auto"></div>
+            <p class="text-gray-500 text-sm mt-2">Calculating price...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorDiv"
+            class="hidden bg-gray-100 border border-gray-300 text-gray-700 px-4 py-2 rounded-sm mb-6 text-sm">
+            <strong>Error:</strong> <span id="errorMessage"></span>
+        </div>
+
+        <!-- Prediction Result -->
+        {% if prediction %}
+        <div class="bg-white border border-gray-200 rounded-sm p-8">
+            <h2 class="text-lg font-light text-black mb-4 text-center">Estimated Price</h2>
+            <div class="text-center">
+                <div class="text-4xl font-light text-black mb-2">{{ prediction.predicted_price_str }}</div>
+                <div class="text-gray-500 text-sm mb-4">Price per sqft: ₹ {{ "%.2f"|format(prediction.price_per_sqft) }}
+                </div>
+                <div class="text-xs text-gray-400">Model Version: {{ prediction.model_version }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="resultDiv" class="hidden bg-white border border-gray-200 rounded-sm p-8">
+            <h2 class="text-lg font-light text-black mb-4 text-center">Estimated Price</h2>
+            <div class="text-center">
+                <div id="predictedPrice" class="text-4xl font-light text-black mb-2"></div>
+                <div id="pricePerSqft" class="text-gray-500 text-sm mb-4"></div>
+                <div id="modelVersion" class="text-xs text-gray-400"></div>
+            </div>
+            <div class="mt-6 p-4 bg-gray-50 rounded-sm">
+                <p class="text-xs text-gray-600">
+                    <strong>Note:</strong> This is an estimated price based on the provided features.
+                    Actual market prices may vary based on additional factors.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle locality selection
+        document.getElementById('locality').addEventListener('change', function () {
+            const otherDiv = document.getElementById('otherLocalityDiv');
+            if (this.value === '__OTHER__') {
+                otherDiv.classList.remove('hidden');
+            } else {
+                otherDiv.classList.add('hidden');
+            }
+        });
+
+        // Form submission
+        document.getElementById('predictionForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Hide previous results/errors
+            document.getElementById('resultDiv').classList.add('hidden');
+            document.getElementById('errorDiv').classList.add('hidden');
+            document.getElementById('loadingDiv').classList.remove('hidden');
+
+            // Get form data
+            const formData = new FormData(this);
+
+            // Handle locality
+            let locality = formData.get('locality');
+            if (locality === '__OTHER__') {
+                locality = document.getElementById('otherLocality').value.trim();
+                if (!locality) {
+                    showError('Please enter a locality name');
+                    document.getElementById('loadingDiv').classList.add('hidden');
+                    return;
+                }
+            }
+
+            // Build JSON payload
+            const payload = {
+                area: parseFloat(formData.get('area')),
+                total_rooms: parseInt(formData.get('total_rooms')),
+                Bedrooms: parseInt(formData.get('Bedrooms')),
+                Bathrooms: parseInt(formData.get('Bathrooms')),
+                Balcony: parseInt(formData.get('Balcony')),
+                parking: parseInt(formData.get('parking')),
+                Lift: formData.get('Lift') === 'true',
+                furnished_status: formData.get('furnished_status'),
+                building_type: formData.get('building_type'),
+                locality: locality,
+                new_or_resale: formData.get('new_or_resale')
+            };
+
+            // Add optional coordinates
+            const lat = formData.get('latitude');
+            const lon = formData.get('longitude');
+            if (lat) payload.latitude = parseFloat(lat);
+            if (lon) payload.longitude = parseFloat(lon);
+
+            try {
+                const response = await fetch('/predict_json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Prediction failed');
+                }
+
+                // Display result
+                document.getElementById('predictedPrice').textContent = data.predicted_price_str;
+                document.getElementById('pricePerSqft').textContent =
+                    `Price per sqft: ₹ ${data.price_per_sqft.toFixed(2)}`;
+                document.getElementById('modelVersion').textContent =
+                    `Model Version: ${data.model_version}`;
+
+                document.getElementById('resultDiv').classList.remove('hidden');
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loadingDiv').classList.add('hidden');
+            }
+        });
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorDiv').classList.remove('hidden');
+        }
+    </script>
+</body>
+
+</html>
